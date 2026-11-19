@@ -1,11 +1,13 @@
 // manifest.sprite = { pixelated?: bool, states: { idle:{src,frames,fps}, walk:{…}, … } }
+// states 的值可寫成字串,表示沿用另一個狀態,例如 "climb": "walk"
 // 每個 src 是「橫向排列」的序列圖(frames=1 時可為 PNG / GIF / APNG / WebP 動圖)
 export async function create({ manifest, baseUrl, size, container }) {
   const cfg = manifest.sprite || {}, states = cfg.states || {};
   if (!states.idle) throw new Error('sprite.states 必須包含 idle');
   const url = s => baseUrl + encodeURI(s.src);
+  const resolve = n => { let s = states[n], hop = 0; while (typeof s === 'string' && hop++ < 5) s = states[s]; return s; };
   const imgs = {}, ctxs = {};
-  await Promise.all(Object.values(states).map(s => new Promise((ok, no) => {
+  await Promise.all(Object.values(states).filter(s => typeof s === 'object').map(s => new Promise((ok, no) => {
     const i = new Image(); i.crossOrigin = 'anonymous';
     i.onload = () => { imgs[s.src] = i; ok(); }; i.onerror = () => no(new Error('找不到圖片 ' + s.src)); i.src = url(s);
   })));
@@ -19,7 +21,7 @@ export async function create({ manifest, baseUrl, size, container }) {
   let cur, curName, t = 0, frame = 0;
   const apply = name => {
     if (name === curName) return;
-    curName = name; cur = states[name] || states.idle; t = 0; frame = 0;
+    curName = name; cur = resolve(name) || states.idle; t = 0; frame = 0;
     el.style.backgroundImage = `url("${url(cur)}")`;
     el.style.backgroundSize = `${(cur.frames || 1) * 100}% 100%`;
     el.style.backgroundPosition = '0 0';

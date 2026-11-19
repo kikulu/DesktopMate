@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><title>角色製作工具</title>
+<style>
+  :root{color-scheme:light dark;--bd:#8884;--ac:#e8833a}
+  body{margin:0;font:14px/1.5 system-ui,sans-serif;padding:0 0 80px}
+  header{padding:14px 24px;border-bottom:1px solid var(--bd)}header h1{margin:0;font-size:20px}header p{margin:2px 0 0;opacity:.7}
+  section{max-width:1100px;margin:18px auto;padding:0 24px}
+  h2{font-size:16px;margin:0 0 10px;border-left:4px solid var(--ac);padding-left:8px}
+  .row{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin:6px 0}
+  label{display:inline-flex;gap:6px;align-items:center}
+  input[type=text],input[type=number],select,textarea{font:inherit;padding:4px 8px;border:1px solid var(--bd);border-radius:6px;background:transparent;color:inherit}
+  input[type=number]{width:70px}textarea{width:100%;box-sizing:border-box}
+  button{font:inherit;padding:5px 12px;border:1px solid var(--bd);border-radius:6px;background:#8881;color:inherit;cursor:pointer}
+  button:hover{border-color:var(--ac)}button.primary{background:var(--ac);color:#fff;border-color:var(--ac)}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+  .tab.on{background:var(--ac);color:#fff;border-color:var(--ac)}.tab small{opacity:.8}
+  .hint{opacity:.65;font-size:13px}
+  .cols{display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:18px}
+  .checker{background:conic-gradient(#8883 25%,#fff0 0 50%,#8883 0 75%,#fff0 0) 0 0/20px 20px;border:1px solid var(--bd);border-radius:8px;display:flex;justify-content:center;align-items:center;min-height:300px}
+  #stage canvas{max-width:100%;max-height:520px;cursor:crosshair;touch-action:none}
+  .thumbs{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+  .th{position:relative;border:2px solid transparent;border-radius:8px}.th.on{border-color:var(--ac)}
+  .th canvas{width:64px;height:64px;display:block;border-radius:6px}
+  .th .ops{display:flex;justify-content:space-between}.th .ops button{padding:0 5px;font-size:12px}
+  table{border-collapse:collapse}td,th{padding:3px 10px;text-align:left}
+  .grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+  .grid2 b{display:block;font-weight:600;margin-bottom:2px}
+  footer{position:fixed;left:0;right:0;bottom:0;padding:10px 24px;background:Canvas;border-top:1px solid var(--bd);display:flex;gap:14px;align-items:center}
+  #status{flex:1}.err{color:#d33}.ok{color:#2a8}
+</style></head>
+<body>
+<header><h1>🐾 角色製作工具</h1><p>把寵物照片去背、組成動作動畫,並設定它的行為與台詞。儲存後會直接出現在系統匣的「角色」選單。</p></header>
+
+<section><h2>1. 基本資料</h2>
+  <div class="row">
+    <label>角色代號 <input id="id" type="text" placeholder="例:mochi(英數字)" size="16"></label>
+    <label>顯示名稱 <input id="name" type="text" placeholder="例:麻糬" size="14"></label>
+    <label>桌面大小 <input id="size" type="range" min="64" max="256" value="128"><span id="sizeVal">128</span>px</label>
+    <label>照片中寵物朝向 <select id="facing"><option value="right">朝右</option><option value="left">朝左</option></select></label>
+  </div>
+  <div class="row hint">朝向用來決定往左走時要不要左右翻轉;所有照片請盡量保持同一個朝向。</div>
+</section>
+
+<section><h2>2. 動作照片</h2>
+  <div class="tabs" id="tabs"></div>
+  <div class="row">
+    <label>這個動作 <select id="alias"></select></label>
+    <label id="fpsBox">速度 <input id="fps" type="range" min="1" max="24" value="6"><span id="fpsVal">6</span> 格/秒</label>
+    <span class="hint" id="stHint"></span>
+  </div>
+  <div id="own">
+    <div class="row"><label><button id="addBtn" class="primary">＋ 加入照片(可多選)</button><input id="file" type="file" accept="image/*" multiple hidden></label>
+      <span class="hint">只有一張也可以:會自動加上彈跳/搖擺動畫。多張照片會依序播放成動畫。</span></div>
+    <div class="thumbs" id="thumbs"></div>
+  </div>
+  <div class="cols" id="editorBox">
+    <div>
+      <div class="row">
+        <button id="autoBtn" class="primary">自動去背</button>
+        <button id="autoAllBtn">全部照片自動去背</button>
+        <label>容許度 <input id="tol" type="range" min="10" max="120" value="40"><span id="tolVal">40</span></label>
+        <label><input id="largest" type="checkbox" checked>只保留最大主體</label>
+      </div>
+      <div class="row">
+        <label><input type="radio" name="tool" value="erase" checked>橡皮擦</label>
+        <label><input type="radio" name="tool" value="restore">還原筆刷</label>
+        <label><input type="radio" name="tool" value="pick">點選去背(點背景色)</label>
+        <label>筆刷 <input id="brush" type="range" min="4" max="90" value="26"></label>
+        <button id="undoBtn">復原</button><button id="resetBtn">重設此張</button>
+      </div>
+      <div class="checker" id="stage"><span class="hint">先加入一張照片</span></div>
+    </div>
+    <div>
+      <b>預覽</b>
+      <div class="checker" style="min-height:0;margin:6px 0"><canvas id="prev" width="256" height="256" style="width:210px;height:210px"></canvas></div>
+      <label>縮放基準 <select id="scope"><option value="global">全部動作統一</option><option value="state">每個動作各自</option><option value="frame">每張照片各自</option></select></label>
+      <div class="hint">拍攝距離差不多 → 統一;距離不一 → 各自。</div>
+    </div>
+  </div>
+</section>
+
+<section><h2>3. 行為設定(actions.json)</h2>
+  <div class="row"><label><input id="procedural" type="checkbox" checked>對只有單張照片的動作加上彈跳/搖擺動畫</label></div>
+  <h3 style="font-size:14px;margin:14px 0 4px">移動與睡眠</h3><div class="row" id="movement"></div>
+  <h3 style="font-size:14px;margin:14px 0 4px">隨機行為<span class="hint">(權重越大越常發生;時間單位:秒)</span></h3>
+  <table id="behaviors"></table>
+  <h3 style="font-size:14px;margin:14px 0 4px">台詞<span class="hint">(一行一句,隨機挑選;清空 = 不說話;可用 {h} 小時、{name} 名稱)</span></h3>
+  <div class="grid2" id="speech"></div>
+  <div class="row"><button id="resetActions">還原預設行為</button></div>
+</section>
+
+<footer><button id="save" class="primary">💾 儲存並使用</button><span id="status" class="hint">同一個代號再次儲存會覆蓋原有角色。</span></footer>
+<script type="module" src="./creator.js"></script>
+</body></html>

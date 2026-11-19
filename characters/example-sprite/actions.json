@@ -1,0 +1,13 @@
+{
+  "movement": { "walkSpeed": 0.7, "followSpeed": 1.8 },
+  "sleepAfterSeconds": 30,
+  "behaviors": {
+    "walk":  { "weight": 20, "duration": [2, 4] },
+    "idle":  { "weight": 40, "duration": [3, 7] },
+    "climb": { "enabled": false }
+  },
+  "speech": {
+    "onDrag": ["咕啾!放我下來~"],
+    "onChime": ["咕嚕… {h} 點了"]
+  }
+}

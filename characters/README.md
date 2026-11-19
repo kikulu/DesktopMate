@@ -52,3 +52,61 @@
 ## 滑鼠穿透
 只有點到「不透明的部分」才會攔截點擊,其餘區域會穿透到下方視窗:
 svg 以元素命中判斷、sprite 讀取像素 alpha、model3d / vrm 以射線檢測。
+
+---
+
+# 動作定義設定檔 `actions.json`
+
+放在角色資料夾裡(和 `character.json` 並排),**只需要寫想覆蓋的欄位**,其餘沿用預設。
+任何類型的角色(svg / sprite / model3d / vrm)都適用。完整預設值見 `shared/actions.js`。
+
+```json
+{
+  "movement": { "walkSpeed": 1.2, "followSpeed": 2.6, "climbSpeed": 1.4, "jumpPower": 14, "gravity": 0.8 },
+  "sleepAfterSeconds": 60,
+  "behaviors": {
+    "walk":   { "enabled": true, "weight": 30, "duration": [2, 6] },
+    "dance":  { "weight": 0 },
+    "climb":  { "enabled": false }
+  },
+  "speech": {
+    "talk":    ["今天也要加油"],
+    "onClick": ["摸摸我~", "喵?"],
+    "onSleep": []
+  }
+}
+```
+
+| 欄位 | 說明 |
+|---|---|
+| `movement.*` | 速度單位為「像素 / 60fps 的一個畫面」,不受螢幕更新率影響。`jumpPower` 與 `gravity` 決定跳多高 |
+| `sleepAfterSeconds` | 幾秒沒互動就睡著;`0` = 永不睡覺 |
+| `behaviors.<名稱>` | 名稱:`walk` `idle` `follow` `dance` `climb` `talk`。`enabled` 開關、`weight` 權重(越大越常發生,`0` 等於關閉)、`duration` = `[最短, 最長]` 秒 |
+| `speech.<事件>` | 一組台詞,隨機挑一句。`[]` = 該事件不說話。可用 `{h}`(小時)、`{name}`(角色名稱) |
+
+台詞事件:`talk`(自言自語)、`onClick` `onDoubleClick` `onLoad` `onWake` `onSleep` `onDrag` `onFollow` `onCatch` `onDance` `onClimbEnd` `onChime`、`dreams`(睡覺時的夢話)。
+
+優先順序:內建預設 < `character.json` 的 `speech` < `actions.json`。
+
+## sprite 的「沿用」
+`character.json` 的 `sprite.states` 值可以寫成字串,表示沿用另一個狀態:
+```json
+"states": { "idle": {...}, "walk": {...}, "climb": "walk", "follow": "walk" }
+```
+
+---
+
+# 用寵物照片製作角色
+
+系統匣 →「角色 → 角色製作工具…」開啟視窗:
+
+1. **基本資料**:代號(資料夾名稱)、顯示名稱、桌面大小、照片裡寵物的朝向。
+2. **動作照片**:為每個動作(待機、走路、跟著滑鼠、跳舞、睡覺、跳躍、被抓住、爬牆)加入照片。
+   - 只有「待機」是必填;沒有照片的動作會退回待機,也可以選「沿用其他動作」。
+   - 一個動作放多張照片會依序播放成動畫(◀ ▶ 調整順序);只有一張時,勾選「程式化動作」會自動加上彈跳/搖擺。
+   - 加入照片時會自動去背:以四角顏色當背景色,從邊緣向內填色,並只保留最大的主體。背景複雜時可調「容許度」,再用**橡皮擦 / 還原筆刷 / 點選去背**修細節,可復原。
+   - 輸出時會把每張照片裁到主體範圍,以腳底對齊、置中放進 256×256 的格子。
+3. **行為設定**:即 `actions.json` 的圖形介面(移動、隨機行為權重與時間、各事件台詞)。
+4. 按「儲存並使用」:會寫入使用者角色資料夾(`character.json`、`actions.json`、每個動作一張 PNG 序列圖),並立刻套用到桌面上的寵物。
+
+拍照小技巧:背景單純(白牆、素色地毯)、光線均勻、拍攝距離一致、盡量同一個朝向,去背效果最好。

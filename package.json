@@ -1,7 +1,7 @@
 {
   "name": "desktop-mate",
   "productName": "Desktop Mate",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "桌面寵物:支援 SVG / Sprite / 3D / VRM 自訂角色",
   "main": "main.js",
   "private": true,

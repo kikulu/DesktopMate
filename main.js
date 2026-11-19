@@ -5,7 +5,7 @@ const path = require('path'), fs = require('fs'), { pathToFileURL } = require('u
 protocol.registerSchemesAsPrivileged([{ scheme: 'mate',
   privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true } }]);
 
-let win, tray, paused = false;
+let win, tray, creatorWin, paused = false;
 const DEFAULT_KEY = 'builtin:default-cat';
 const roots = () => ({ app: __dirname, builtin: path.join(__dirname, 'characters'), user: path.join(app.getPath('userData'), 'characters') });
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
@@ -23,7 +23,9 @@ function scanCharacters() {
       try {
         const m = JSON.parse(fs.readFileSync(path.join(root, d.name, 'character.json'), 'utf8'));
         if (!['svg', 'sprite', 'model3d', 'vrm'].includes(m.type)) throw new Error('未知的 type: ' + m.type);
-        out.push({ key: `${source}:${d.name}`, source, id: d.name, name: m.name || d.name,
+        let actions = null;
+        try { actions = JSON.parse(fs.readFileSync(path.join(root, d.name, 'actions.json'), 'utf8')); } catch {}
+        out.push({ key: `${source}:${d.name}`, source, id: d.name, name: m.name || d.name, actions,
                    baseUrl: `mate://${source}/${encodeURIComponent(d.name)}/`, manifest: m });
       } catch (e) { console.warn('略過角色', d.name, e.message); }
     }
@@ -41,6 +43,7 @@ function buildMenu() {
         ...chars.map(c => ({ label: c.name + (c.source === 'user' ? '(自訂)' : ''), type: 'radio', checked: c.key === cur,
           click: () => { saveSettings({ character: c.key }); send('character'); } })),
         { type: 'separator' },
+        { label: '角色製作工具…(用寵物照片做角色)', click: openCreator },
         { label: '開啟自訂角色資料夾', click: () => { fs.mkdirSync(roots().user, { recursive: true }); shell.openPath(roots().user); } },
         { label: '重新載入角色', click: () => { refresh(); send('character'); } }
     ] },
@@ -55,6 +58,13 @@ function buildMenu() {
     { type: 'separator' },
     { label: '離開 (Ctrl+Shift+Q)', click: () => app.quit() }
   ]);
+}
+function openCreator() {
+  if (creatorWin && !creatorWin.isDestroyed()) return creatorWin.focus();
+  creatorWin = new BrowserWindow({ width: 1180, height: 860, title: '角色製作工具', autoHideMenuBar: true,
+    webPreferences: { preload: path.join(__dirname, 'preload.js') } });
+  creatorWin.removeMenu();
+  creatorWin.loadURL('mate://app/tools/creator.html');
 }
 function refresh() { tray && tray.setContextMenu(buildMenu()); }
 
@@ -92,5 +102,22 @@ app.whenReady().then(() => {
   globalShortcut.register('CommandOrControl+Shift+Q', () => app.quit());
 });
 ipcMain.on('set-ignore', (_e, ignore) => win && win.setIgnoreMouseEvents(ignore, { forward: true }));
+// 製作工具:把角色寫入使用者角色資料夾
+ipcMain.handle('creator:save', (e, p) => {
+  if (!creatorWin || e.sender !== creatorWin.webContents) throw new Error('forbidden');
+  if (!/^[\w\-\u4e00-\u9fff]{1,40}$/u.test(p.id || '')) throw new Error('角色代號只能用中英文、數字、底線、連字號(最長 40 字)');
+  const dir = path.join(roots().user, p.id);
+  fs.mkdirSync(dir, { recursive: true });
+  for (const f of fs.readdirSync(dir)) if (/\.png$/i.test(f)) fs.unlinkSync(path.join(dir, f));   // 清掉舊的圖
+  for (const [name, b64] of Object.entries(p.files || {})) {
+    if (!/^[\w\-]+\.png$/.test(name)) throw new Error('不合法的檔名: ' + name);
+    fs.writeFileSync(path.join(dir, name), Buffer.from(b64, 'base64'));
+  }
+  fs.writeFileSync(path.join(dir, 'character.json'), JSON.stringify({ ...p.manifest, type: 'sprite' }, null, 2));
+  fs.writeFileSync(path.join(dir, 'actions.json'), JSON.stringify(p.actions || {}, null, 2));
+  saveSettings({ character: 'user:' + p.id });
+  refresh(); send('character');
+  return 'user:' + p.id;
+});
 ipcMain.handle('characters:list', () => ({ list: scanCharacters(), current: loadSettings().character || DEFAULT_KEY }));
 app.on('window-all-closed', () => app.quit());
