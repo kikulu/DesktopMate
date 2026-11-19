@@ -1,0 +1,8 @@
+{
+  "name": "小橘貓",
+  "type": "svg",
+  "size": 96,
+  "facing": "right",
+  "eyeY": 0.56,
+  "svg": { "file": "cat.svg", "eyes": { "left": "#pL", "right": "#pR", "max": 2.6 } }
+}

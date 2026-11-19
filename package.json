@@ -1,0 +1,47 @@
+{
+  "name": "desktop-mate",
+  "productName": "Desktop Mate",
+  "version": "0.3.0",
+  "description": "桌面寵物:支援 SVG / Sprite / 3D / VRM 自訂角色",
+  "main": "main.js",
+  "private": true,
+  "license": "UNLICENSED",
+  "author": { "name": "Your Name", "email": "you@example.com" },
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac",
+    "dist:linux": "electron-builder --linux"
+  },
+  "dependencies": {
+    "three": "^0.170.0",
+    "@pixiv/three-vrm": "^3.3.0"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.example.desktopmate",
+    "productName": "Desktop Mate",
+    "artifactName": "DesktopMate-${version}-${os}-${arch}.${ext}",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "asar": true,
+    "files": [
+      "**/*",
+      "!dist/**", "!build/**", "!.github/**", "!.git/**", "!*.md", "!.gitignore", "!.gitattributes",
+      "!node_modules/three/src/**", "!node_modules/three/examples/{textures,models,fonts}/**"
+    ],
+    "win": { "icon": "build/icon.png", "target": [{ "target": "nsis", "arch": ["x64"] }] },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "perMachine": false },
+    "mac": {
+      "icon": "build/icon.png",
+      "category": "public.app-category.entertainment",
+      "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }],
+      "extendInfo": { "LSUIElement": true }
+    },
+    "linux": { "icon": "build/icon.png", "category": "Utility", "target": ["AppImage", "deb"] }
+  }
+}

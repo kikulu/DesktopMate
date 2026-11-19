@@ -1,0 +1,18 @@
+{
+  "name": "史萊姆(sprite 範例)",
+  "type": "sprite",
+  "size": 80,
+  "facing": "right",
+  "proceduralMotion": false,
+  "sprite": {
+    "pixelated": true,
+    "states": {
+      "idle":   { "src": "slime.png", "frames": 4, "fps": 3 },
+      "walk":   { "src": "slime.png", "frames": 4, "fps": 8 },
+      "follow": { "src": "slime.png", "frames": 4, "fps": 12 },
+      "dance":  { "src": "slime.png", "frames": 4, "fps": 10 },
+      "sleep":  { "src": "slime.png", "frames": 4, "fps": 1 }
+    }
+  },
+  "speech": { "talk": ["咕嚕~", "我是史萊姆!", "咕啾咕啾"], "dreams": ["好想變成果凍…", "咕嚕…咕嚕…"] }
+}
